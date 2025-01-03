@@ -153,6 +153,8 @@ build.json @home-assistant/supervisor
 /homeassistant/components/atag/ @MatsNL
 /tests/components/atag/ @MatsNL
 /homeassistant/components/aten_pe/ @mtdcr
+/homeassistant/components/atlea/ @carel
+/tests/components/atlea/ @carel
 /homeassistant/components/atome/ @baqs
 /homeassistant/components/august/ @bdraco
 /tests/components/august/ @bdraco

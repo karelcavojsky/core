@@ -1,0 +1,214 @@
+import json  # noqa: D100
+
+import aiohttp
+
+
+class aMotionDescription:
+    """Store amotion data."""
+
+    def __init__(self):
+        """Init amotion data."""
+        self.device_name = "Atrea Device"
+        self.device_type = "aMotion"
+        self.board_type = "Unknown"
+        self.production_number = "Unknown"
+        self.brand = "Unknown"
+        self.requests = list[str]
+        self.unit = list[str]
+        self.types = {}
+        self.control = {}
+
+
+class aMotionConnectorEndpoints:
+    """Store device data."""
+
+    def __init__(self, host: str, port=80) -> None:  # noqa: D107
+        if host.find("http") != 0:
+            host = f"http://{host}"
+
+        self._host = host
+        self._port = port
+
+    def uri(self, ep):  # noqa: D102
+        return f"{self._host}:{self._port}/{ep}"
+
+    def login(self):  # noqa: D102
+        return self.uri("api/login")
+
+    def ui_control_scheme(self):  # noqa: D102
+        return self.uri("api/ui_control_scheme")
+
+    def get_scenes(self):  # noqa: D102
+        return self.uri("api/control_admin/config/get_scenes")
+
+    def get_triggers_fce(self):  # noqa: D102
+        return self.uri("api/control_admin/config/get_trigger_functions")
+
+    def get_ui_info(self):  # noqa: D102
+        return self.uri("api/ui_info")
+
+    def get_discovery(self):  # noqa: D102
+        return self.uri("api/discovery")
+
+
+class aMotionConnector:
+    """Adapter to connect aMotion family device."""
+
+    def __init__(self, username: str, password: str, host: str, port=80) -> None:
+        """Initialize connection.
+
+        Args:
+            username (str): Username - the device user should be admin
+            password (str): password
+            host (str): IP address OR hostname of the device (default protocol is HTTP)
+            port (int, optional): If there is a non default. Defaults to 80.
+
+        """
+        self._host = host
+        self._port = port
+        self._username = username
+        self._password = password
+        self._api_key = ""
+        self._session = None
+        self.headers = {
+            "Content-type": "application/json",
+            "Accept": "application/json",
+            "X-ATC-TOKEN": self._api_key,
+        }
+
+    @property
+    def host(self):  # noqa: D102
+        return self._host
+
+    @host.setter
+    def host(self, value):
+        self._host = value
+
+    @property
+    def port(self):  # noqa: D102
+        return self._port
+
+    @port.setter
+    def port(self, value):
+        self._port = value
+
+    @property
+    def username(self):  # noqa: D102
+        return self._username
+
+    @username.setter
+    def username(self, value):
+        self._username = value
+
+    @property
+    def password(self):  # noqa: D102
+        return self._password
+
+    @password.setter
+    def password(self, value):
+        self._password = value
+
+    @property
+    def api_key(self):  # noqa: D102
+        return self._api_key
+
+    @api_key.setter
+    def api_key(self, value):
+        self._api_key = value
+
+    async def connect(self, force=False):  # noqa: D102
+        if (force == False) and (self._api_key != ""):  # noqa: E712
+            return True
+        session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
+        self._session = aiohttp.ClientSession(timeout=session_timeout)
+        url = aMotionConnectorEndpoints(self._host, self._port).login()
+        data = {"username": self._username, "password": self._password}
+        r = await self._session.post(url, data=json.dumps(data), headers=self.headers)
+
+        if r.status == 200:
+            result = await r.json()
+            self._api_key = result["result"]
+            self.headers["X-ATC-TOKEN"] = self._api_key
+            return True
+        return False
+
+    async def getControlSchema(self):  # noqa: D102
+        if not await self.connect():
+            pass
+        url = aMotionConnectorEndpoints(self._host, self._port).ui_control_scheme()
+        r = await self._session.get(url, headers=self.headers)
+
+        if r.status == 200:
+            result = await r.json()
+            return result["result"]
+        return {}
+
+    async def getScenes(self):  # noqa: D102
+        if not await self.connect():
+            pass
+        url = aMotionConnectorEndpoints(self._host, self._port).get_scenes()
+        r = await self._session.get(url, headers=self.headers)
+
+        if r.status == 200:
+            result = await r.json()
+            return result["result"]
+        return {}
+
+    async def getTriggerFunctions(self):  # noqa: D102
+        if not await self.connect():
+            pass
+        url = aMotionConnectorEndpoints(self._host, self._port).get_triggers_fce()
+        r = await self._session.get(url, headers=self.headers)
+
+        if r.status == 200:
+            result = await r.json()
+            return result["result"]
+        return {}
+
+    async def getUiInfo(self):  # noqa: D102
+        if not await self.connect():
+            pass
+        url = aMotionConnectorEndpoints(self._host, self._port).get_ui_info()
+        r = await self._session.get(url, headers=self.headers)
+
+        if r.status == 200:
+            result = await r.json()
+            return result["result"]
+        return {}
+
+    async def getDiscovery(self):  # noqa: D102
+        if not await self.connect():
+            pass
+        url = aMotionConnectorEndpoints(self._host, self._port).get_discovery()
+        r = await self._session.get(url, headers=self.headers)
+
+        if r.status == 200:
+            result = await r.json()
+            return result["result"]
+        return {}
+
+    async def description(self) -> aMotionDescription:  # noqa: D102
+        desc = aMotionDescription()
+        control = await self.getControlSchema()
+        discovery = await self.getDiscovery()
+        desc.requests = control["requests"]
+        desc.unit = control["unit"]
+        desc.device_name = discovery["name"]
+        desc.device_type = discovery["type"]
+        desc.board_type = discovery["board_type"]
+        desc.brand = discovery["brand"]
+        desc.types = control["types"]
+        desc.production_number = discovery["production_number"]
+
+        for iname in desc.requests:
+            desc.control[iname] = desc.types[iname]
+            if not hasattr(desc.control[iname], "name"):
+                desc.control[iname]["name"] = iname
+
+        return desc
+
+    async def close(self):  # noqa: D102
+        try:  # noqa: SIM105
+            await self._session.close()
+        except Exception:  # noqa: BLE001
+            pass

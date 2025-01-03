@@ -537,6 +537,12 @@
       "integration_type": "virtual",
       "supported_by": "opower"
     },
+    "atlea": {
+      "name": "VZT",
+      "integration_type": "hub",
+      "config_flow": true,
+      "iot_class": "local_polling"
+    },
     "atome": {
       "name": "Atome Linky",
       "integration_type": "hub",
