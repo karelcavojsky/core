@@ -17,6 +17,7 @@ class aMotionDescription:
         self.unit = list[str]
         self.types = {}
         self.control = {}
+        self.sensors = {}
 
 
 class aMotionConnectorEndpoints:
@@ -204,6 +205,10 @@ class aMotionConnector:
             desc.control[iname] = desc.types[iname]
             if not hasattr(desc.control[iname], "name"):
                 desc.control[iname]["name"] = iname
+
+        for iname in desc.types:
+            if desc.requests.count(iname) == 0:
+                desc.sensors[iname] = desc.types[iname]
 
         return desc
 

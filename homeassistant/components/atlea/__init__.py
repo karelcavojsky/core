@@ -10,7 +10,7 @@ from .connector import aMotionConnector
 from .coordinator import AtleaDataUpdateCoordinator
 
 # For your initial PR, limit it to 1 platform.
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.NUMBER, Platform.SENSOR]
 
 
 type AtleaConfigEntry = ConfigEntry  # noqa: F821
