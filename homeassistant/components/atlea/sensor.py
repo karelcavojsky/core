@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import random
+
 # from pprint import pprint
 import time
 
@@ -14,8 +16,10 @@ from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import AtleaConfigEntry
+from .coordinator import AtleaDataUpdateCoordinator
 
 
 def setup_platform(
@@ -37,14 +41,14 @@ async def async_setup_entry(
 
     async_add_entities(
         [
-            TemeratureSensor("devanm", f"{time.time}"),
-            TemeratureSensor("devbnm", f"{time.time}"),
-            TemeratureSensor("devcnm", f"{time.time}"),
+            TemeratureSensor("devanm", f"{time.time}", entry.runtime_data),
+            TemeratureSensor("devbnm", f"{time.time}", entry.runtime_data),
+            TemeratureSensor("devcnm", f"{time.time}", entry.runtime_data),
         ]
     )
 
 
-class TemeratureSensor(SensorEntity):
+class TemeratureSensor(CoordinatorEntity, SensorEntity):
     """Representation of a Sensor."""
 
     _attr_has_entity_name = True
@@ -53,14 +57,15 @@ class TemeratureSensor(SensorEntity):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, name: str, unique_id: str) -> None:
+    def __init__(
+        self, name: str, unique_id: str, coordinator: AtleaDataUpdateCoordinator
+    ) -> None:
         """Init the base entity."""
+        super().__init__(coordinator)
         self._attr_name = name
         self._attr_unique_id = f"{name}-{unique_id}"
 
-    def update(self) -> None:
-        """Fetch new state data for the sensor.
-
-        This is the only method that should fetch new data for Home Assistant.
-        """
-        self._attr_native_value = 23
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self._attr_native_value = random.randrange(220, 260) / 10
+        self.async_write_ha_state()
