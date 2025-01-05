@@ -18,20 +18,21 @@ class aMotionDescription:
         self.types = {}
         self.control = {}
         self.sensors = {}
+        self.scenes = []
+        self.functions = []
 
 
 class aMotionConnectorEndpoints:
     """Store device data."""
 
-    def __init__(self, host: str, port=80) -> None:  # noqa: D107
+    def __init__(self, host: str) -> None:  # noqa: D107
         if host.find("http") != 0:
             host = f"http://{host}"
 
         self._host = host
-        self._port = port
 
     def uri(self, ep):  # noqa: D102
-        return f"{self._host}:{self._port}/{ep}"
+        return f"{self._host}/{ep}"
 
     def login(self):  # noqa: D102
         return self.uri("api/login")
@@ -54,6 +55,12 @@ class aMotionConnectorEndpoints:
     def get_control(self):  # noqa: D102
         return self.uri("api/control")
 
+    def get_scene_activate(self):  # noqa: D102
+        return self.uri("api/control_admin/config/activate_scene")
+
+    def get_fce_enable(self):  # noqa: D102
+        return self.uri("api/control_admin/config/enable_trigger_function")
+
 
 class aMotionConnector:
     """Adapter to connect aMotion family device."""
@@ -71,7 +78,6 @@ class aMotionConnector:
 
         """
         self._host = host
-        self._port = port
         self._username = username
         self._password = password
         self._api_key = ""
@@ -88,14 +94,6 @@ class aMotionConnector:
     @host.setter
     def host(self, value):
         self._host = value
-
-    @property
-    def port(self):  # noqa: D102
-        return self._port
-
-    @port.setter
-    def port(self, value):
-        self._port = value
 
     @property
     def username(self):  # noqa: D102
@@ -130,7 +128,7 @@ class aMotionConnector:
             return True
         session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
         self._session = aiohttp.ClientSession(timeout=session_timeout)
-        url = aMotionConnectorEndpoints(self._host, self._port).login()
+        url = aMotionConnectorEndpoints(self._host).login()
         data = {"username": self._username, "password": self._password}
         r = await self._session.post(url, data=json.dumps(data), headers=self.headers)
         self.__disconnect_check(r.status)
@@ -144,7 +142,7 @@ class aMotionConnector:
     async def getControlSchema(self):  # noqa: D102
         if not await self.connect():
             pass
-        url = aMotionConnectorEndpoints(self._host, self._port).ui_control_scheme()
+        url = aMotionConnectorEndpoints(self._host).ui_control_scheme()
         r = await self._session.get(url, headers=self.headers)
         self.__disconnect_check(r.status)
         if r.status == 200:
@@ -155,7 +153,7 @@ class aMotionConnector:
     async def getScenes(self):  # noqa: D102
         if not await self.connect():
             pass
-        url = aMotionConnectorEndpoints(self._host, self._port).get_scenes()
+        url = aMotionConnectorEndpoints(self._host).get_scenes()
         r = await self._session.get(url, headers=self.headers)
         self.__disconnect_check(r.status)
         if r.status == 200:
@@ -166,7 +164,7 @@ class aMotionConnector:
     async def getTriggerFunctions(self):  # noqa: D102
         if not await self.connect():
             pass
-        url = aMotionConnectorEndpoints(self._host, self._port).get_triggers_fce()
+        url = aMotionConnectorEndpoints(self._host).get_triggers_fce()
         r = await self._session.get(url, headers=self.headers)
         self.__disconnect_check(r.status)
         if r.status == 200:
@@ -177,7 +175,7 @@ class aMotionConnector:
     async def getUiInfo(self):  # noqa: D102
         if not await self.connect():
             pass
-        url = aMotionConnectorEndpoints(self._host, self._port).get_ui_info()
+        url = aMotionConnectorEndpoints(self._host).get_ui_info()
         r = await self._session.get(url, headers=self.headers)
         self.__disconnect_check(r.status)
         if r.status == 200:
@@ -188,7 +186,7 @@ class aMotionConnector:
     async def getDiscovery(self):  # noqa: D102
         if not await self.connect():
             pass
-        url = aMotionConnectorEndpoints(self._host, self._port).get_discovery()
+        url = aMotionConnectorEndpoints(self._host).get_discovery()
         r = await self._session.get(url, headers=self.headers)
         self.__disconnect_check(r.status)
         if r.status == 200:
@@ -200,6 +198,8 @@ class aMotionConnector:
         desc = aMotionDescription()
         control = await self.getControlSchema()
         discovery = await self.getDiscovery()
+        scenes = await self.getScenes()
+        functions = await self.getTriggerFunctions()
         desc.requests = control["requests"]
         desc.unit = control["unit"]
         desc.device_name = discovery["name"]
@@ -208,6 +208,8 @@ class aMotionConnector:
         desc.brand = discovery["brand"]
         desc.types = control["types"]
         desc.production_number = discovery["production_number"]
+        desc.scenes = scenes["get_scenes_config"]
+        desc.functions = functions["get_trigger_functions"]
 
         for iname in desc.requests:
             desc.control[iname] = desc.types[iname]
@@ -238,7 +240,31 @@ class aMotionConnector:
         if not await self.connect():
             return False
         data = {"variables": {variable: value}}
-        url = aMotionConnectorEndpoints(self._host, self._port).get_control()
+        url = aMotionConnectorEndpoints(self._host).get_control()
+        r = await self._session.post(url, data=json.dumps(data), headers=self.headers)
+        self.__disconnect_check(r.status)
+        if r.status == 200:
+            return True
+        return False
+
+    async def setScene(self, id: int) -> bool:
+        """Send the scene setup."""
+        if not await self.connect():
+            return False
+        data = {"sceneId": id}
+        url = aMotionConnectorEndpoints(self._host).get_scene_activate()
+        r = await self._session.post(url, data=json.dumps(data), headers=self.headers)
+        self.__disconnect_check(r.status)
+        if r.status == 200:
+            return True
+        return False
+
+    async def setFce(self, id: int, state: bool) -> bool:
+        """Enable or disable trigger function."""
+        if not await self.connect():
+            return False
+        data = {"id": id, "enabled": state}
+        url = aMotionConnectorEndpoints(self._host).get_fce_enable()
         r = await self._session.post(url, data=json.dumps(data), headers=self.headers)
         self.__disconnect_check(r.status)
         if r.status == 200:
