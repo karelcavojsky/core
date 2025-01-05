@@ -35,7 +35,7 @@ class PlaceholderHub:
     def __init__(self, host: str, username: str, password: str) -> None:
         """Initialize."""
         self.host = host
-        self.connector = aMotionConnector(username, password, host)
+        self.connector = aMotionConnector(username, password, host, 8211)
 
     async def connect(self):
         """Connect to the device."""

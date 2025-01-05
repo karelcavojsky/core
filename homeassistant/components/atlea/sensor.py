@@ -90,9 +90,14 @@ class RangeValueSensor(CoordinatorEntity, SensorEntity):
             )
             self._attr_device_class = SensorDeviceClass.VOLUME_FLOW_RATE
             self._attr_state_class = SensorStateClass.MEASUREMENT
+            self._attr_icon = "mdi:weather-windy"
         if str(sensor["valueType"]).find("percent") == 0:
             self._attr_native_unit_of_measurement = PERCENTAGE
             self._attr_device_class = SensorDeviceClass.POWER_FACTOR
+            if name.find("fan") == 0:
+                self._attr_icon = "mdi:fan"
+            else:
+                self._attr_icon = "mdi:gauge"
             self._attr_state_class = SensorStateClass.MEASUREMENT
         if str(sensor["valueType"]).find("press") == 0:
             self._attr_native_unit_of_measurement = UnitOfPressure.PA
@@ -100,9 +105,13 @@ class RangeValueSensor(CoordinatorEntity, SensorEntity):
             self._attr_state_class = SensorStateClass.MEASUREMENT
         if str(sensor["type"]).find("enum") == 0:
             self._attr_device_class = SensorDeviceClass.ENUM
-            self._attr_native_value = "VENTILATION"
+            self._attr_native_value = "UNKNOWN"
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        # self._attr_native_value = random.randrange(220, 260) / 10
+        try:  # noqa: SIM105
+            self._attr_native_value = self.coordinator.data[str(self.name)]
+        except Exception:  # noqa: BLE001
+            pass
+
         self.async_write_ha_state()

@@ -33,7 +33,7 @@ class AtleaDataUpdateCoordinator(DataUpdateCoordinator):
         """Fetch the data from the aMotion device."""
 
         try:
-            return await self._connector.getUiInfo()
+            return await self._connector.update()
         except ClientError as error:
             raise UpdateFailed(
                 f"Error updating from aMotion device: {error}"

@@ -212,6 +212,19 @@ class aMotionConnector:
 
         return desc
 
+    async def update(self) -> dict:  # noqa: D102
+        data = {}
+        uinfo = await self.getUiInfo()
+
+        sourceKeys = ["requests", "unit"]
+
+        for skey in sourceKeys:
+            source = uinfo[skey]
+            for iname in source:
+                data[iname] = source[iname]
+
+        return data
+
     async def close(self):  # noqa: D102
         try:  # noqa: SIM105
             await self._session.close()
