@@ -20,8 +20,7 @@ class AtleaDataUpdateCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass: HomeAssistant, connector: aMotionConnector) -> None:
         """Initialize the data updater."""
-
-        self._connector = connector
+        self.connector = connector
         super().__init__(
             hass=hass,
             logger=_LOGGER,
@@ -33,7 +32,7 @@ class AtleaDataUpdateCoordinator(DataUpdateCoordinator):
         """Fetch the data from the aMotion device."""
 
         try:
-            return await self._connector.update()
+            return await self.connector.update()
         except ClientError as error:
             raise UpdateFailed(
                 f"Error updating from aMotion device: {error}"

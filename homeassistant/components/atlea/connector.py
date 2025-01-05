@@ -51,9 +51,14 @@ class aMotionConnectorEndpoints:
     def get_discovery(self):  # noqa: D102
         return self.uri("api/discovery")
 
+    def get_control(self):  # noqa: D102
+        return self.uri("api/control")
+
 
 class aMotionConnector:
     """Adapter to connect aMotion family device."""
+
+    _session: aiohttp.ClientSession
 
     def __init__(self, username: str, password: str, host: str, port=80) -> None:
         """Initialize connection.
@@ -70,7 +75,6 @@ class aMotionConnector:
         self._username = username
         self._password = password
         self._api_key = ""
-        self._session = None
         self.headers = {
             "Content-type": "application/json",
             "Accept": "application/json",
@@ -117,6 +121,10 @@ class aMotionConnector:
     def api_key(self, value):
         self._api_key = value
 
+    def __disconnect_check(self, status):
+        if status == 401:
+            self._api_key = ""
+
     async def connect(self, force=False):  # noqa: D102
         if (force == False) and (self._api_key != ""):  # noqa: E712
             return True
@@ -125,7 +133,7 @@ class aMotionConnector:
         url = aMotionConnectorEndpoints(self._host, self._port).login()
         data = {"username": self._username, "password": self._password}
         r = await self._session.post(url, data=json.dumps(data), headers=self.headers)
-
+        self.__disconnect_check(r.status)
         if r.status == 200:
             result = await r.json()
             self._api_key = result["result"]
@@ -138,7 +146,7 @@ class aMotionConnector:
             pass
         url = aMotionConnectorEndpoints(self._host, self._port).ui_control_scheme()
         r = await self._session.get(url, headers=self.headers)
-
+        self.__disconnect_check(r.status)
         if r.status == 200:
             result = await r.json()
             return result["result"]
@@ -149,7 +157,7 @@ class aMotionConnector:
             pass
         url = aMotionConnectorEndpoints(self._host, self._port).get_scenes()
         r = await self._session.get(url, headers=self.headers)
-
+        self.__disconnect_check(r.status)
         if r.status == 200:
             result = await r.json()
             return result["result"]
@@ -160,7 +168,7 @@ class aMotionConnector:
             pass
         url = aMotionConnectorEndpoints(self._host, self._port).get_triggers_fce()
         r = await self._session.get(url, headers=self.headers)
-
+        self.__disconnect_check(r.status)
         if r.status == 200:
             result = await r.json()
             return result["result"]
@@ -171,7 +179,7 @@ class aMotionConnector:
             pass
         url = aMotionConnectorEndpoints(self._host, self._port).get_ui_info()
         r = await self._session.get(url, headers=self.headers)
-
+        self.__disconnect_check(r.status)
         if r.status == 200:
             result = await r.json()
             return result["result"]
@@ -182,7 +190,7 @@ class aMotionConnector:
             pass
         url = aMotionConnectorEndpoints(self._host, self._port).get_discovery()
         r = await self._session.get(url, headers=self.headers)
-
+        self.__disconnect_check(r.status)
         if r.status == 200:
             result = await r.json()
             return result["result"]
@@ -224,6 +232,18 @@ class aMotionConnector:
                 data[iname] = source[iname]
 
         return data
+
+    async def control(self, variable, value) -> bool:
+        """Send the control request."""
+        if not await self.connect():
+            return False
+        data = {"variables": {variable: value}}
+        url = aMotionConnectorEndpoints(self._host, self._port).get_control()
+        r = await self._session.post(url, data=json.dumps(data), headers=self.headers)
+        self.__disconnect_check(r.status)
+        if r.status == 200:
+            return True
+        return False
 
     async def close(self):  # noqa: D102
         try:  # noqa: SIM105

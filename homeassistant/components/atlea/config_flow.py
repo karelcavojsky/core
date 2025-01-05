@@ -12,8 +12,8 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
-from .connector import aMotionConnector
 from .const import DOMAIN
+from .hub import aMotionHub
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,36 +24,6 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_PASSWORD): str,
     }
 )
-
-
-class PlaceholderHub:
-    """Placeholder class to make tests pass.
-
-    TODO Remove this placeholder class and replace with things from your PyPI package.
-    """
-
-    def __init__(self, host: str, username: str, password: str) -> None:
-        """Initialize."""
-        self.host = host
-        self.connector = aMotionConnector(username, password, host, 8211)
-
-    async def connect(self):
-        """Connect to the device."""
-        return await self.connector.connect()
-
-    async def authenticate(self, username: str, password: str) -> bool:
-        """Test if we can authenticate with the host."""
-        return await self.connector.connect()
-
-    async def load(self):
-        """Load device description data."""
-        desc = await self.connector.description()
-        await self.connector.close()
-        return desc
-
-    async def close(self):
-        """Close the session."""
-        await self.connector.close()
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
@@ -68,7 +38,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     #     your_validate_func, data[CONF_USERNAME], data[CONF_PASSWORD]
     # )
 
-    hub = PlaceholderHub(data[CONF_HOST], data[CONF_USERNAME], data[CONF_PASSWORD])
+    hub = aMotionHub(data[CONF_HOST], data[CONF_USERNAME], data[CONF_PASSWORD])
 
     try:
         await hub.connect()

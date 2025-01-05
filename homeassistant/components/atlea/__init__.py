@@ -25,7 +25,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AtleaConfigEntry) -> boo
         8211,
     )
     coordinator = AtleaDataUpdateCoordinator(hass, connector)
-    entry.runtime_data = coordinator
+    entry.runtime_data = {"coordinator": coordinator, "connector": connector}
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True

@@ -52,7 +52,7 @@ async def async_setup_entry(
                 RangeValueSensor(
                     f"{sensor}",
                     f"{production_number}-{time.time}",
-                    entry.runtime_data,
+                    entry.runtime_data["coordinator"],
                     sensors[sensor],
                     production_number,
                 )

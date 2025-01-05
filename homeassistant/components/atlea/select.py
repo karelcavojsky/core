@@ -12,6 +12,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import AtleaConfigEntry
+from .connector import aMotionConnector
 from .coordinator import AtleaDataUpdateCoordinator
 
 
@@ -42,9 +43,10 @@ async def async_setup_entry(
                 RangeValueSelector(
                     f"{control}",
                     f"{production_number}-{time.time}",
-                    entry.runtime_data,
+                    entry.runtime_data["coordinator"],
                     controls[control],
                     production_number,
+                    entry.runtime_data["connector"],
                 )
             )
 
@@ -63,6 +65,7 @@ class RangeValueSelector(CoordinatorEntity, SelectEntity):
         coordinator: AtleaDataUpdateCoordinator,
         control,
         production_number: str,
+        connector: aMotionConnector,
     ) -> None:
         """Init the base entity."""
         super().__init__(coordinator)
@@ -71,6 +74,7 @@ class RangeValueSelector(CoordinatorEntity, SelectEntity):
         self._attr_translation_key = name
         self._attr_options = control["values"]
         self._attr_current_option = self._attr_options[0]
+        self._connector = connector
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
@@ -78,5 +82,8 @@ class RangeValueSelector(CoordinatorEntity, SelectEntity):
             self._attr_current_option = self.coordinator.data[str(self.name)]
         except Exception:  # noqa: BLE001
             pass
-
         self.async_write_ha_state()
+
+    async def async_select_option(self, option: str) -> None:
+        """Change the selected option."""
+        await self._connector.control(str(self.name), option)

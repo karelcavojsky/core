@@ -18,6 +18,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import AtleaConfigEntry
+from .connector import aMotionConnector
 from .coordinator import AtleaDataUpdateCoordinator
 
 
@@ -48,9 +49,10 @@ async def async_setup_entry(
                 RangeValueNumber(
                     f"{control}",
                     f"{production_number}-{time.time}",
-                    entry.runtime_data,
+                    entry.runtime_data["coordinator"],
                     controls[control],
                     production_number,
+                    entry.runtime_data["connector"],
                 )
             )
 
@@ -71,6 +73,7 @@ class RangeValueNumber(CoordinatorEntity, NumberEntity):
         coordinator: AtleaDataUpdateCoordinator,
         control,
         production_number: str,
+        connector: aMotionConnector,
     ) -> None:
         """Init the base entity."""
         super().__init__(coordinator)
@@ -79,6 +82,7 @@ class RangeValueNumber(CoordinatorEntity, NumberEntity):
         self._attr_native_min_value = control["min"]
         self._attr_native_max_value = control["max"]
         self._attr_native_step = control["step"]
+        self._connector = connector
 
         if str(control["valueType"]).find("t_") == 0:
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
@@ -105,6 +109,7 @@ class RangeValueNumber(CoordinatorEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         """Update the current value."""
+        await self._connector.control(str(self.name), value)
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
