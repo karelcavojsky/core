@@ -35,8 +35,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: AtleaConfigEntry) -> boo
         identifiers={
             (DOMAIN, entry.options["device_description"]["production_number"])
         },
-        manufacturer="NOAATREA",
-        model="Atlea Visibility Sensor",
+        manufacturer="ATREA",
+        model="aMotion",
     )
 
     coordinator = AtleaDataUpdateCoordinator(hass, connector, device)
