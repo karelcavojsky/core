@@ -61,6 +61,9 @@ class aMotionConnectorEndpoints:
     def get_fce_enable(self):  # noqa: D102
         return self.uri("api/control_admin/config/enable_trigger_function")
 
+    def get_control_panel(self):  # noqa: D102
+        return self.uri("api/control_panel")
+
 
 class aMotionConnector:
     """Adapter to connect aMotion family device."""
@@ -183,6 +186,17 @@ class aMotionConnector:
             return result["result"]
         return {}
 
+    async def getControlPanel(self):  # noqa: D102
+        if not await self.connect():
+            pass
+        url = aMotionConnectorEndpoints(self._host).get_control_panel()
+        r = await self._session.get(url, headers=self.headers)
+        self.__disconnect_check(r.status)
+        if r.status == 200:
+            result = await r.json()
+            return result["result"]
+        return {}
+
     async def getDiscovery(self):  # noqa: D102
         if not await self.connect():
             pass
@@ -225,8 +239,10 @@ class aMotionConnector:
     async def update(self) -> dict:  # noqa: D102
         data = {}
         uinfo = await self.getUiInfo()
+        controlPanel = await self.getControlPanel()
+        uinfo["current"] = controlPanel["control_panel"]["current"]
 
-        sourceKeys = ["requests", "unit"]
+        sourceKeys = ["requests", "unit", "current"]
 
         for skey in sourceKeys:
             source = uinfo[skey]

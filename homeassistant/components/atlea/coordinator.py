@@ -8,6 +8,7 @@ import logging
 from aiohttp import ClientError
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .connector import aMotionConnector
@@ -18,8 +19,11 @@ _LOGGER = logging.getLogger(__name__)
 class AtleaDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the aMotion device."""
 
-    def __init__(self, hass: HomeAssistant, connector: aMotionConnector) -> None:
+    def __init__(
+        self, hass: HomeAssistant, connector: aMotionConnector, device_info: DeviceInfo
+    ) -> None:
         """Initialize the data updater."""
+        self.device_info = device_info
         self.connector = connector
         super().__init__(
             hass=hass,

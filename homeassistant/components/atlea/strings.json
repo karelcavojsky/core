@@ -21,10 +21,7 @@
   "entity": {
     "sensor": {
       "temp_oda": {
-        "name": "Doorbell ding"
-      },
-      "image_capture": {
-        "name": "Image capture"
+        "name": "Outside temperature"
       }
     }
   }

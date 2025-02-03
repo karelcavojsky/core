@@ -79,6 +79,7 @@ class RangeValueSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = name
         self._attr_unique_id = f"{name}-{unique_id}"
         self._attr_translation_key = name
+        self._attr_device_info = coordinator.device_info
 
         if str(sensor["valueType"]).find("t_") == 0:
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS

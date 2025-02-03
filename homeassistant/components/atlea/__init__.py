@@ -5,8 +5,10 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from .connector import aMotionConnector
+from .const import DOMAIN
 from .coordinator import AtleaDataUpdateCoordinator
 
 # For your initial PR, limit it to 1 platform.
@@ -25,12 +27,19 @@ type AtleaConfigEntry = ConfigEntry  # noqa: F821
 async def async_setup_entry(hass: HomeAssistant, entry: AtleaConfigEntry) -> bool:
     """Set up VZT from a config entry."""
     connector = aMotionConnector(
-        entry.data[CONF_USERNAME],
-        entry.data[CONF_PASSWORD],
-        entry.data[CONF_HOST],
-        8211,
+        entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD], entry.data[CONF_HOST]
     )
-    coordinator = AtleaDataUpdateCoordinator(hass, connector)
+
+    device = DeviceInfo(
+        # entry_type = DeviceEntryType.SERVICE,
+        identifiers={
+            (DOMAIN, entry.options["device_description"]["production_number"])
+        },
+        manufacturer="NOAATREA",
+        model="Atlea Visibility Sensor",
+    )
+
+    coordinator = AtleaDataUpdateCoordinator(hass, connector, device)
     entry.runtime_data = {"coordinator": coordinator, "connector": connector}
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

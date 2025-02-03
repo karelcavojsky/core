@@ -75,6 +75,7 @@ class RangeValueSelector(CoordinatorEntity, SelectEntity):
         self._attr_options = control["values"]
         self._attr_current_option = self._attr_options[0]
         self._connector = connector
+        self._attr_device_info = coordinator.device_info
 
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""

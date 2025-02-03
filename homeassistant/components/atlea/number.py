@@ -83,6 +83,7 @@ class RangeValueNumber(CoordinatorEntity, NumberEntity):
         self._attr_native_max_value = control["max"]
         self._attr_native_step = control["step"]
         self._connector = connector
+        self._attr_device_info = coordinator.device_info
 
         if str(control["valueType"]).find("t_") == 0:
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS

@@ -5,7 +5,7 @@ from __future__ import annotations
 # from pprint import pprint
 import time
 
-from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -70,8 +70,11 @@ class SwitchFunctionEntity(CoordinatorEntity, SwitchEntity):
         self._attr_name = function["name"]
         self._attr_unique_id = f"{name}-{unique_id}"
         self._attr_translation_key = name
+        self._attr_device_class = SwitchDeviceClass.OUTLET
         self._connector = connector
         self.function = function
+        self._attr_icon = "md.toggle-switch"
+        self._attr_device_info = coordinator.device_info
 
     async def async_turn_off(self, **kwargs):
         """Turn the entity off."""

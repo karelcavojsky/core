@@ -2,6 +2,8 @@
 
 ORIGIN_DIR=`pwd`
 WORKING_DIR=$(dirname "$0")
+VIRTUAL_ENV=venv
+
 
 cd $WORKING_DIR
 

@@ -74,6 +74,7 @@ class SceneEntity(CoordinatorEntity, ButtonEntity):
         self._attr_translation_key = name
         self._connector = connector
         self.scene = scene
+        self._attr_device_info = coordinator.device_info
 
     async def async_press(self) -> None:
         """Handle the button press."""
