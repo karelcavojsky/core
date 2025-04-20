@@ -10,29 +10,34 @@ class VentboxAddress:
 
 class _VentboxValueType:
     def __init__(self):
+        self.register = 0
         self.type = "range"
         self.unit = "°C"
         self.valueType = "UNKNOWN"
         self.name = "UNKNOWN"
+        self.multiplier = 1
 
 
 class _VentboxValueTypeTemperature(_VentboxValueType):
-    def __init__(self, name="unknown", max=50.0, min=-30.0, step=0.1):
+    def __init__(self, register: int, name="unknown", max=50.0, min=-30.0, step=0.1):
         """Init data."""
         super().__init__()
+        self.register = register
         self.name = name
         self.valueType = "t_outside"
         self.max = max
         self.min = min
         self.step = step
+        self.multiplier = 0.1
 
 
 class _VentboxValueTypeNumber(_VentboxValueType):
     def __init__(
-        self, name="unknown", max=50.0, min=-30.0, step=0.1, unit="", valueType="number"
+        self, register: int, name="unknown", max=50.0, min=-30.0, step=0.1, unit="", valueType="number"
     ):
         """Init data."""
         super().__init__()
+        self.register = register
         self.name = name
         self.valueType = valueType
         self.max = max
@@ -42,9 +47,10 @@ class _VentboxValueTypeNumber(_VentboxValueType):
 
 
 class _VentboxValueTypeFactor(_VentboxValueType):
-    def __init__(self, name="unknown", max=50.0, min=-30.0, step=0.1):
+    def __init__(self, register: int, name="unknown", max=50.0, min=-30.0, step=0.1):
         """Init data."""
         super().__init__()
+        self.register = register
         self.name = name
         self.valueType = "percent"
         self.max = max
@@ -54,9 +60,10 @@ class _VentboxValueTypeFactor(_VentboxValueType):
 
 
 class _VentboxValueTypeEnum(_VentboxValueType):
-    def __init__(self, name="unknown", values=list[str]):
+    def __init__(self, register: int, name="unknown", values=list[str]):
         """Init data."""
         super().__init__()
+        self.register = register
         self.name = name
         self.values = values
         self.type = "enum"
@@ -65,9 +72,10 @@ class _VentboxValueTypeEnum(_VentboxValueType):
 
 
 class _VentboxValueTypeBool(_VentboxValueType):
-    def __init__(self, name="unknown"):
+    def __init__(self, register: int, name="unknown"):
         """Init data."""
         super().__init__()
+        self.register = register
         self.name = name
         self.type = "bool"
         self.unit = "On"
@@ -112,6 +120,15 @@ class VentboxConnector:
     def port(self, value):
         self._port = value
 
+    async def close(self, force=False):  # noqa: D102
+        try:
+            if self._client.connected:
+                self._client.close()
+                return True
+        except Exception:  # noqa: BLE001
+            pass
+        return False
+
     async def connect(self, force=False):  # noqa: D102
         # pymodbus_apply_logging_config("DEBUG")
 
@@ -141,94 +158,51 @@ class VentboxConnector:
     async def getRequests(self):
         """Get the control parameters."""
         req = {}
-        req["co2"] = vars(
-            _VentboxValueTypeNumber(name="co2", max=2000, min=400, step=1, unit="ppm")
-        )
-        req["tvoc"] = vars(
-            _VentboxValueTypeNumber(name="tvoc", max=10, min=0, step=1, unit="ppm")
-        )
-        req["radon"] = vars(
-            _VentboxValueTypeNumber(name="radon", max=1000, min=0, step=1, unit="Bq/m3")
-        )
-        req["rh"] = vars(_VentboxValueTypeFactor(name="rh"))
-        req["power_req"] = vars(_VentboxValueTypeFactor(name="power_req"))
-        req["year"] = vars(
-            _VentboxValueTypeNumber(name="year", max=3000, min=0, step=1, unit="Y")
-        )
-        req["month"] = vars(
-            _VentboxValueTypeNumber(name="month", max=12, min=1, step=1, unit="M")
-        )
-        req["day"] = vars(
-            _VentboxValueTypeNumber(name="day", max=31, min=1, step=1, unit="D")
-        )
-        req["hour"] = vars(
-            _VentboxValueTypeNumber(name="hour", max=24, min=0, step=1, unit="h")
-        )
-        req["min"] = vars(
-            _VentboxValueTypeNumber(name="min", max=60, min=0, step=1, unit="m")
-        )
-        req["sec"] = vars(
-            _VentboxValueTypeNumber(name="sec", max=60, min=0, step=1, unit="s")
-        )
+        req["co2"] = vars(_VentboxValueTypeNumber(107,name="co2", max=2000, min=400, step=1, unit="ppm"))
+        req["tvoc"] = vars(_VentboxValueTypeNumber(109,name="tvoc", max=10, min=0, step=1, unit="ppm"))
+        req["radon"] = vars(_VentboxValueTypeNumber(110,name="radon", max=1000, min=0, step=1, unit="Bq/m3"))
+        req["rh"] = vars(_VentboxValueTypeFactor(108,name="rh"))
+        req["power_req"] = vars(_VentboxValueTypeFactor(106,name="power_req"))
+        req["year"] = vars(_VentboxValueTypeNumber(100,name="year", max=3000, min=0, step=1, unit="Y"))
+        req["month"] = vars(_VentboxValueTypeNumber(101,name="month", max=12, min=1, step=1, unit="M"))
+        req["day"] = vars(_VentboxValueTypeNumber(102,name="day", max=31, min=1, step=1, unit="D"))
+        req["hour"] = vars(_VentboxValueTypeNumber(103,name="hour", max=24, min=0, step=1, unit="h"))
+        req["min"] = vars(_VentboxValueTypeNumber(104,name="min", max=60, min=0, step=1, unit="m"))
+        req["sec"] = vars(_VentboxValueTypeNumber(105,name="sec", max=60, min=0, step=1, unit="s"))
 
         return req
 
     async def getUnit(self):
         """Get the monitor parameters."""
         unit = {}
-        unit["te1"] = vars(_VentboxValueTypeTemperature("te1"))
-        unit["te1p"] = vars(_VentboxValueTypeTemperature("te1p"))
-        unit["te2"] = vars(_VentboxValueTypeTemperature("te2"))
-        unit["ti1"] = vars(_VentboxValueTypeTemperature("ti1"))
-        unit["ti2"] = vars(_VentboxValueTypeTemperature("ti2"))
-        unit["efficiency"] = vars(_VentboxValueTypeFactor("efficiency"))
-        unit["in_power"] = vars(
-            _VentboxValueTypeNumber(name="in_power", max=3000, min=0, step=1, unit="W")
-        )
-        unit["m1_power"] = vars(_VentboxValueTypeFactor(name="m1_power"))
-        unit["m2_power"] = vars(_VentboxValueTypeFactor(name="m2_power"))
-        unit["m1_rpm"] = vars(
-            _VentboxValueTypeNumber(name="m1_rpm", max=6000, min=0, step=1, unit="RPM")
-        )
-        unit["m2_rpm"] = vars(
-            _VentboxValueTypeNumber(name="m2_rpm", max=6000, min=0, step=1, unit="RPM")
-        )
-        unit["m1_rh"] = vars(_VentboxValueTypeFactor(name="m1_rh"))
-        unit["m2_rh"] = vars(_VentboxValueTypeFactor(name="m2_rh"))
-        unit["m1_te"] = vars(_VentboxValueTypeTemperature(name="m1_te"))
-        unit["m2_te"] = vars(_VentboxValueTypeTemperature(name="m2_te"))
-        unit["m1_mass_flow"] = vars(
-            _VentboxValueTypeNumber(
-                name="m1_mass_flow", max=6000, min=0, step=1, unit="kg/h"
-            )
-        )
-        unit["m2_mass_flow"] = vars(
-            _VentboxValueTypeNumber(
-                name="m2_mass_flow", max=6000, min=0, step=1, unit="kg/h"
-            )
-        )
-        unit["year"] = vars(
-            _VentboxValueTypeNumber(name="year", max=3000, min=0, step=1, unit="Y")
-        )
-        unit["month"] = vars(
-            _VentboxValueTypeNumber(name="month", max=12, min=1, step=1, unit="M")
-        )
-        unit["day"] = vars(
-            _VentboxValueTypeNumber(name="day", max=31, min=1, step=1, unit="D")
-        )
-        unit["hour"] = vars(
-            _VentboxValueTypeNumber(name="hour", max=24, min=0, step=1, unit="h")
-        )
-        unit["min"] = vars(
-            _VentboxValueTypeNumber(name="min", max=60, min=0, step=1, unit="m")
-        )
-        unit["sec"] = vars(
-            _VentboxValueTypeNumber(name="sec", max=60, min=0, step=1, unit="s")
-        )
+        unit["te1"] = vars(_VentboxValueTypeTemperature(110,"te1"))
+        unit["te1p"] = vars(_VentboxValueTypeTemperature(111,"te1p"))
+        unit["te2"] = vars(_VentboxValueTypeTemperature(112,"te2"))
+        unit["ti1"] = vars(_VentboxValueTypeTemperature(113,"ti1"))
+        unit["ti2"] = vars(_VentboxValueTypeTemperature(114,"ti2"))
+        unit["efficiency"] = vars(_VentboxValueTypeFactor(115,"efficiency"))
+        unit["in_power"] = vars(_VentboxValueTypeNumber(116,name="in_power", max=3000, min=0, step=1, unit="W"))
+        unit["m1_power"] = vars(_VentboxValueTypeFactor(118,name="m1_power"))
+        unit["m2_power"] = vars(_VentboxValueTypeFactor(119,name="m2_power"))
+        unit["m1_rpm"] = vars(_VentboxValueTypeNumber(120,name="m1_rpm", max=6000, min=0, step=1, unit="RPM"))
+        unit["m2_rpm"] = vars(_VentboxValueTypeNumber(121,name="m2_rpm", max=6000, min=0, step=1, unit="RPM"))
+        unit["m1_rh"] = vars(_VentboxValueTypeFactor(122,name="m1_rh"))
+        unit["m2_rh"] = vars(_VentboxValueTypeFactor(123,name="m2_rh"))
+        unit["m1_te"] = vars(_VentboxValueTypeTemperature(124,name="m1_te"))
+        unit["m2_te"] = vars(_VentboxValueTypeTemperature(125,name="m2_te"))
+        unit["m1_mass_flow"] = vars(_VentboxValueTypeNumber(126,name="m1_mass_flow", max=6000, min=0, step=1, unit="kg/h"))
+        unit["m2_mass_flow"] = vars(_VentboxValueTypeNumber(127,name="m2_mass_flow", max=6000, min=0, step=1, unit="kg/h"))
+        unit["year"] = vars(_VentboxValueTypeNumber(128,name="year", max=3000, min=0, step=1, unit="Y"))
+        unit["month"] = vars(_VentboxValueTypeNumber(129,name="month", max=12, min=1, step=1, unit="M"))
+        unit["day"] = vars(_VentboxValueTypeNumber(130,name="day", max=31, min=1, step=1, unit="D"))
+        unit["hour"] = vars(_VentboxValueTypeNumber(131,name="hour", max=24, min=0, step=1, unit="h"))
+        unit["min"] = vars(_VentboxValueTypeNumber(132,name="min", max=60, min=0, step=1, unit="m"))
+        unit["sec"] = vars(_VentboxValueTypeNumber(133,name="sec", max=60, min=0, step=1, unit="s"))
 
         return unit
 
-    async def description(self) -> VentboxDescription:  # noqa: D102
+    async def description(self) -> VentboxDescription: 
+        """Return data for entitiy assembling."""
         desc = VentboxDescription()
         desc.sensors = await self.getUnit()
         desc.unit = []
@@ -241,8 +215,21 @@ class VentboxConnector:
 
         return desc
 
-    async def update(self) -> dict:  # noqa: D102
-        data = {"dummy": False}
+    async def update(self) -> dict: 
+        """Return monitor data."""
+        data = {}
+        await self.connect()
+        try:
+            startRegister = 110
+            res = await self._client.read_input_registers(startRegister, count=30, slave=VentboxAddress.MAIN_UNIT)
+            units = await self.getUnit()
+            for unit in units:
+                #print(units[unit]['name'])
+                val = res.registers[units[unit]['register'] - startRegister] * units[unit]['multiplier']
+                data[units[unit]['name']] = val
+            
+        except Exception: # noqa: BLE001
+            pass
         # uinfo = await self.getUiInfo()
         # controlPanel = await self.getControlPanel()
         # uinfo["current"] = controlPanel["control_panel"]["current"]
@@ -253,16 +240,10 @@ class VentboxConnector:
         #     source = uinfo[skey]
         #     for iname in source:
         #         data[iname] = source[iname]
-
+        print((data))
         return data  # noqa: RET504
 
     async def control(self, variable, value) -> bool:
         """Send the control request."""
 
         return False
-
-    async def close(self):  # noqa: D102
-        try:  # noqa: SIM105
-            await self.getUnit()
-        except Exception:  # noqa: BLE001
-            pass

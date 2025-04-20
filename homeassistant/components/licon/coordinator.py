@@ -28,7 +28,7 @@ class LiconDataUpdateCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass=hass,
             logger=_LOGGER,
-            name="Atloa",
+            name="Licon",
             update_interval=timedelta(seconds=10),
         )
 
