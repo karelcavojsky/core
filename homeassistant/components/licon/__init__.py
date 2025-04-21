@@ -16,6 +16,7 @@ PLATFORMS: list[Platform] = [
     Platform.NUMBER,
     Platform.SELECT,
     Platform.SENSOR,
+    Platform.SWITCH,
 ]
 
 
@@ -44,7 +45,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: LiconConfigEntry) -> boo
 
 async def async_unload_entry(hass: HomeAssistant, entry: LiconConfigEntry) -> bool:
     """Unload a config entry."""
-    print('update')
     try:
         await entry.runtime_data['connector'].close()
     except:
@@ -53,7 +53,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: LiconConfigEntry) -> bo
 
 async def async_remove_entry(hass: HomeAssistant, entry: LiconConfigEntry) -> bool:
     """Remove a config entry."""
-    print('remove')
     try:
         await entry.runtime_data['connector'].close()
     except:

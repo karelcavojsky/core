@@ -65,7 +65,7 @@ class RangeValueNumber(CoordinatorEntity, NumberEntity):
     """Representation of a Sensor."""
 
     _attr_has_entity_name = True
-    _attr_translation_key = "temp_oda"
+    _attr_translation_key = "temp"
     _attr_mode = NumberMode.SLIDER
 
     def __init__(
@@ -87,6 +87,8 @@ class RangeValueNumber(CoordinatorEntity, NumberEntity):
         self._connector = connector
         self._attr_device_info = coordinator.device_info
 
+        
+
         if str(control["valueType"]).find("t_") == 0:
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
             self._attr_device_class = NumberDeviceClass.TEMPERATURE
@@ -106,6 +108,9 @@ class RangeValueNumber(CoordinatorEntity, NumberEntity):
         if str(control["valueType"]).find("press") == 0:
             self._attr_native_unit_of_measurement = UnitOfPressure.PA
             self._attr_device_class = NumberDeviceClass.PRESSURE
+        if str(control["valueType"]).find("number") == 0:
+            self._attr_mode = NumberMode.BOX
+            self._attr_icon = "mdi:numeric"
 
     def set_native_value(self, value: float) -> None:
         """Update the current value."""
