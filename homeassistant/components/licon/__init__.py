@@ -44,4 +44,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: LiconConfigEntry) -> boo
 
 async def async_unload_entry(hass: HomeAssistant, entry: LiconConfigEntry) -> bool:
     """Unload a config entry."""
+    print('update')
+    try:
+        await entry.runtime_data['connector'].close()
+    except:
+        pass
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+async def async_remove_entry(hass: HomeAssistant, entry: LiconConfigEntry) -> bool:
+    """Remove a config entry."""
+    print('remove')
+    try:
+        await entry.runtime_data['connector'].close()
+    except:
+        pass

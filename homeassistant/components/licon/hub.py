@@ -1,6 +1,6 @@
 """Base ventbox HUB."""
 
-from .connector import VentboxConnector
+from .connector import VentboxConnector, async_wrap
 
 
 class ventboxHub:
@@ -35,3 +35,16 @@ class ventboxHub:
     async def close(self):
         """Close the session."""
         await self.connector.close()
+    
+    @staticmethod
+    @async_wrap
+    def serialPorts() -> list:
+        """ Lists serial port names
+
+            :raises EnvironmentError:
+                On unsupported or unknown platforms
+            :returns:
+                A list of the serial ports available on the system
+        """
+        list = VentboxConnector.serialPorts()
+        return list

@@ -1,6 +1,23 @@
 from pymodbus import FramerType  # noqa: D100
 import pymodbus.client as ModbusClient
 
+import sys
+import glob
+import serial
+import asyncio
+from functools import wraps, partial
+
+def async_wrap(func):
+    @wraps(func)
+    async def run(*args, loop=None, executor=None, **kwargs):
+        if loop is None:
+            loop = asyncio.get_event_loop()
+        pfunc = partial(func, *args, **kwargs)
+        return await loop.run_in_executor(executor, pfunc)
+    return run 
+
+
+
 
 class VentboxAddress:
     """Available parts of the Ventbox system."""
@@ -89,7 +106,7 @@ class VentboxDescription:
         self.device_name = "Ventbox Device"
         self.device_type = "ventbox"
         self.board_type = "Unknown"
-        self.production_number = "Unknown"
+        self.production_number = "E334"
         self.brand = "Unknown"
         self.requests = list[str]
         self.unit = list[str]
@@ -120,6 +137,35 @@ class VentboxConnector:
     def port(self, value):
         self._port = value
 
+    @staticmethod
+    def serialPorts():
+        """ Lists serial port names
+
+            :raises EnvironmentError:
+                On unsupported or unknown platforms
+            :returns:
+                A list of the serial ports available on the system
+        """
+        if sys.platform.startswith('win'):
+            ports = ['COM%s' % (i + 1) for i in range(256)]
+        elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+            # this excludes your current terminal "/dev/tty"
+            ports = glob.glob('/dev/tty[A-Za-z]*')
+        elif sys.platform.startswith('darwin'):
+            ports = glob.glob('/dev/tty.*')
+        else:
+            raise EnvironmentError('Unsupported platform')
+
+        result = []
+        for port in ports:
+            try:
+                s = serial.Serial(port)
+                s.close()
+                result.append(port)
+            except (OSError, serial.SerialException):
+                pass
+        return result
+
     async def close(self, force=False):  # noqa: D102
         try:
             if self._client.connected:
@@ -131,7 +177,6 @@ class VentboxConnector:
 
     async def connect(self, force=False):  # noqa: D102
         # pymodbus_apply_logging_config("DEBUG")
-
         try:
             if self._client.connected:
                 return True
@@ -204,6 +249,10 @@ class VentboxConnector:
     async def description(self) -> VentboxDescription: 
         """Return data for entitiy assembling."""
         desc = VentboxDescription()
+        startRegister = 100
+        res = await self._client.read_input_registers(startRegister, count=30, slave=VentboxAddress.MAIN_UNIT)
+        desc.production_number = res.registers[0]
+        desc.device_name = f'{desc.device_name} - {desc.production_number}'
         desc.sensors = await self.getUnit()
         desc.unit = []
         for re in desc.sensors:
