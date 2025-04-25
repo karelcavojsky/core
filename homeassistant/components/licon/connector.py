@@ -24,6 +24,12 @@ class VentboxAddress:
 
     MAIN_UNIT = 3
 
+class VentboxVariableType:
+    """Type regarding with ModBus register."""
+
+    INPUTS = 1,
+    HOLDING = 2,
+    COIL = 3
 
 class _VentboxValueType:
     def __init__(self):
@@ -61,6 +67,7 @@ class _VentboxValueTypeNumber(_VentboxValueType):
         self.min = min
         self.step = step
         self.unit = unit
+        self.multiplier = 1
 
 
 class _VentboxValueTypeFactor(_VentboxValueType):
@@ -234,7 +241,7 @@ class VentboxConnector:
         self._requests["hour_req"] = (_VentboxValueTypeNumber(103,name="hour_req", max=24, min=0, step=1, unit="h"))
         self._requests["min_req"] = (_VentboxValueTypeNumber(104,name="min_req", max=60, min=0, step=1, unit="m"))
         self._requests["sec_req"] = (_VentboxValueTypeNumber(105,name="sec_req", max=60, min=0, step=1, unit="s"))
-        self._requests["time_set"] = (_VentboxValueTypeBool(1,name="time_set"))
+        self._requests["time_set"] = (_VentboxValueTypeBool(0,name="time_set"))
 
         for r in self._requests:
             req[r] = vars(self._requests[r])
@@ -274,6 +281,13 @@ class VentboxConnector:
         self._units["min"] = (_VentboxValueTypeNumber(132,name="min", max=60, min=0, step=1, unit="m"))
         self._units["sec"] = (_VentboxValueTypeNumber(133,name="sec", max=60, min=0, step=1, unit="s"))
 
+        self._units["ai1"] = (_VentboxValueTypeNumber(170,name="ai1", max=10, min=0, step=0.01, unit="V", multiplier=0.1, valueType='voltage'))
+        self._units["ai1"] = (_VentboxValueTypeNumber(171,name="ai2", max=10, min=0, step=0.01, unit="V", multiplier=0.1, valueType='voltage'))
+        self._units["di1"] = (_VentboxValueTypeNumber(173,name="di1", max=1, min=0, step=1, valueType='digital'))
+        self._units["di2"] = (_VentboxValueTypeNumber(174,name="di2", max=1, min=0, step=1, valueType='digital'))
+        self._units["di3"] = (_VentboxValueTypeNumber(175,name="di3", max=1, min=0, step=1, valueType='digital'))
+
+
         for r in self._units:
             unit[r] = vars(self._units[r])
 
@@ -296,6 +310,7 @@ class VentboxConnector:
             desc.requests.append(str(re))
 
         return desc
+        
 
     async def update(self) -> dict: 
         """Return monitor data."""
@@ -306,10 +321,10 @@ class VentboxConnector:
                 await self.getUnit()
             if (len(self._requests) == 0):
                 await self.getRequests()
+            await self._client.write_coil(31, True, slave=VentboxAddress.MAIN_UNIT)
             startRegister = 110
             res = await self._client.read_input_registers(startRegister, count=30, slave=VentboxAddress.MAIN_UNIT)            
-            for unit in self._units:
-                #print(units[unit]['name'])
+            for unit in self._units:                
                 val = res.registers[self._units[unit].register - startRegister] * self._units[unit].multiplier
                 try:
                     min = self._units[unit].min
@@ -319,6 +334,18 @@ class VentboxConnector:
                 except: # noqa: BLE001
                     pass
                 data[self._units[unit].name] = val
+            startRegister = 170
+            res = await self._client.read_input_registers(startRegister, count=6, slave=VentboxAddress.MAIN_UNIT)            
+            for unit in self._units:                
+                val = res.registers[self._units[unit].register - startRegister] * self._units[unit].multiplier
+                try:
+                    min = self._units[unit].min
+                    max = self._units[unit].max
+                    if (val > max) or (val < min):
+                        val = None
+                except: # noqa: BLE001
+                    pass
+                data[self._units[unit].name] = val                
             startRegister = 100
             res = await self._client.read_holding_registers(startRegister, count=11, slave=VentboxAddress.MAIN_UNIT)           
             for unit in self._requests:
