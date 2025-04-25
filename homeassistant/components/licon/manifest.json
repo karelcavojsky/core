@@ -9,7 +9,7 @@
   "integration_type": "device",
   "iot_class": "local_polling",
   "quality_scale": "bronze",
-  "requirements": [],
+  "requirements": ["pymodbus==3.8.0"],
   "ssdp": [],
   "zeroconf": []
 }

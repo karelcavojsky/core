@@ -56,7 +56,7 @@ class _VentboxValueTypeTemperature(_VentboxValueType):
 
 class _VentboxValueTypeNumber(_VentboxValueType):
     def __init__(
-        self, register: int, name="unknown", max=50.0, min=-30.0, step=0.1, unit="", valueType="number"
+        self, register: int, name="unknown", max=100, min=0, step=1, unit="", valueType="number", multiplier=1
     ):
         """Init data."""
         super().__init__()
@@ -67,7 +67,7 @@ class _VentboxValueTypeNumber(_VentboxValueType):
         self.min = min
         self.step = step
         self.unit = unit
-        self.multiplier = 1
+        self.multiplier = multiplier
 
 
 class _VentboxValueTypeFactor(_VentboxValueType):
@@ -282,7 +282,7 @@ class VentboxConnector:
         self._units["sec"] = (_VentboxValueTypeNumber(133,name="sec", max=60, min=0, step=1, unit="s"))
 
         self._units["ai1"] = (_VentboxValueTypeNumber(170,name="ai1", max=10, min=0, step=0.01, unit="V", multiplier=0.1, valueType='voltage'))
-        self._units["ai1"] = (_VentboxValueTypeNumber(171,name="ai2", max=10, min=0, step=0.01, unit="V", multiplier=0.1, valueType='voltage'))
+        self._units["ai2"] = (_VentboxValueTypeNumber(171,name="ai2", max=10, min=0, step=0.01, unit="V", multiplier=0.1, valueType='voltage'))
         self._units["di1"] = (_VentboxValueTypeNumber(173,name="di1", max=1, min=0, step=1, valueType='digital'))
         self._units["di2"] = (_VentboxValueTypeNumber(174,name="di2", max=1, min=0, step=1, valueType='digital'))
         self._units["di3"] = (_VentboxValueTypeNumber(175,name="di3", max=1, min=0, step=1, valueType='digital'))
@@ -323,8 +323,11 @@ class VentboxConnector:
                 await self.getRequests()
             await self._client.write_coil(31, True, slave=VentboxAddress.MAIN_UNIT)
             startRegister = 110
-            res = await self._client.read_input_registers(startRegister, count=30, slave=VentboxAddress.MAIN_UNIT)            
-            for unit in self._units:                
+            count = 30
+            res = await self._client.read_input_registers(startRegister, count=count, slave=VentboxAddress.MAIN_UNIT)            
+            for unit in self._units:
+                if (self._units[unit].register < startRegister) or (self._units[unit].register > startRegister + count):
+                    continue                
                 val = res.registers[self._units[unit].register - startRegister] * self._units[unit].multiplier
                 try:
                     min = self._units[unit].min
@@ -335,8 +338,11 @@ class VentboxConnector:
                     pass
                 data[self._units[unit].name] = val
             startRegister = 170
-            res = await self._client.read_input_registers(startRegister, count=6, slave=VentboxAddress.MAIN_UNIT)            
-            for unit in self._units:                
+            count=6
+            res = await self._client.read_input_registers(startRegister, count=count, slave=VentboxAddress.MAIN_UNIT)            
+            for unit in self._units:  
+                if (self._units[unit].register < startRegister) or (self._units[unit].register > startRegister + count):
+                    continue              
                 val = res.registers[self._units[unit].register - startRegister] * self._units[unit].multiplier
                 try:
                     min = self._units[unit].min
@@ -347,8 +353,11 @@ class VentboxConnector:
                     pass
                 data[self._units[unit].name] = val                
             startRegister = 100
-            res = await self._client.read_holding_registers(startRegister, count=11, slave=VentboxAddress.MAIN_UNIT)           
+            count=11
+            res = await self._client.read_holding_registers(startRegister, count=count, slave=VentboxAddress.MAIN_UNIT)           
             for unit in self._requests:
+                if (self._requests[unit].register < startRegister) or (self._requests[unit].register > startRegister + count):
+                    continue
                 if (self._requests[unit].valueType == 'bool'):
                     continue                
                 val = res.registers[self._requests[unit].register - startRegister] * self._requests[unit].multiplier
